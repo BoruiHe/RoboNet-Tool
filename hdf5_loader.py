@@ -152,7 +152,7 @@ def load_data(f_name, file_metadata, hparams):
         start_time, n_states = 0, min([file_metadata['state_T'], file_metadata['img_T'], file_metadata['action_T'] + 1])
         assert n_states > 1, "must be more than one state in loaded tensor/!"
 
-        ''' Keep every time step. So, hparams.load_T should be equal to the minimum time step in meta_data. See line 77 and 93. '''
+        ''' I kept every time step. So, hparams.load_T should be equal to the minimum time step in meta_data. See line 77 and 93. '''
         # # load_T indicates how many time steps I want to load. See line 161.
         # if 1 < hparams.load_T < n_states:
         #     start_time = rng.randint(0, n_states - hparams.load_T)
@@ -169,7 +169,6 @@ def load_data(f_name, file_metadata, hparams):
             # I should add an extra label called 'camera' that indicates from which camera I extract the image and return it as label
             img = load_camera_imgs(cam_index, hf, file_metadata, hparams['img_size'], start_time, n_states)[None]
             images.append(img)
-            # Do not append cam_index, it should be attached as a lable. selected_cams is for load_annotations.
             selected_cams.append(cam_index)
         images = np.swapaxes(np.concatenate(images, 0), 0, 1)
         
@@ -199,7 +198,7 @@ if __name__ == '__main__':
     hdf5_directory = 'C://Users//hbrch//OneDrive//Desktop//Robonet//hdf5' # you should substitute my path with your path.
     meta_data = get_metadata.load_metadata(hdf5_directory)
 
-    ''' The code from line 198 to 202 is a simple example, which is extracting image/state/action from a single .hdf5 file.'''
+    ''' The code from line 102 to 206 is a simple example, which is extracting image/state/action from a single .hdf5 file.'''
     h5file = 'hdf5\\berkeley_sawyer_traj11308.hdf5' # you should substitute my path with your path.
     hparams = default_loader_hparams()
     imgs, actions, states, labels = load_data(h5file, meta_data.get_file_metadata(h5file), hparams=hparams)
