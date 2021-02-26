@@ -5,7 +5,7 @@
 # 2.Run hdf5_loader.py and you will get a list called 'Robonet_Database'.
 # 3.Please read the comments in hdf5_loader.py.
 # For other tasks you may be interested in:
-# 4.Download the .zip file. Unzip it.
+# 4.Download and unzip the .zip file.
 # Explanation: classification.py simply identity which robot an image depicts. prediction.py is aiming to create an image which is very similar to the real image based on states vector.
 # 5.classification.py works well. But prediction.py doesn't work at all.(Feb/26/2021) 
 
