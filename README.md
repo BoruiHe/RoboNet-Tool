@@ -9,5 +9,5 @@
 # Explanation: classification.py simply identity which robot an image depicts. prediction.py is aiming to create an image which is very similar to the real image based on states vector.
 # 5.classification.py works well. But prediction.py doesn't work at all.(Feb/26/2021) 
 
-# Tools are far from efficient. I will update this repository once I make progress.
+# I will update this repository once I make progress.
 # Hope this could help you.
