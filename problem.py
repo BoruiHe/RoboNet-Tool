@@ -154,7 +154,7 @@ if __name__ == "__main__":
             del robot_dict[dictionary['label']][len(robot_dict[dictionary['label']])-1]['label']
 
     batch_size = 3
-    nz, ngf, nc, training_range = 5, 64, 3, 30
+    nz, ngf, nc, epoch_num = 5, 64, 3, 30
     gpu_available = torch.cuda.is_available()
     baxter = ImgPredDataset(robot_dict, 'baxter')
     baxter_loader = DataLoader(baxter, batch_size=batch_size, shuffle=True)
@@ -173,16 +173,16 @@ if __name__ == "__main__":
         plt.savefig('baxter_left_traj1025/30.png')
 
     netG = Generator()
-    netG.apply(weights_init)
+    # netG.apply(weights_init)
     criterion = My_loss(img_shape=(3, 48, 64))
     # optimizer = AdaBelief(netG.parameters(), lr=0.1, eps=1e-16, betas=(0.9,0.999), weight_decouple = True, rectify = False)
     # optimizer = optim.SGD(netG.parameters(), lr=0.1, momentum=0.9)
-    optimizer = optim.Adam(netG.parameters(), lr=0.0002, betas=(beta1, 0.999))
+    optimizer = optim.Adam(netG.parameters(), lr=0.0002, betas=(0.5, 0.999))
     if gpu_available:
         netG.cuda()
         
     loss_list = []
-    for epoch in range(training_range):
+    for epoch in range(epoch_num):
         ep_loss = []
         for bn, (c_imgs, c_stats, n_imgs, n_stats) in enumerate(baxter_loader):
             if gpu_available:
