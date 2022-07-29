@@ -1,12 +1,13 @@
 import torch
+import pickle
 import numpy as np
 import torch.nn as nn
+import matplotlib.pyplot as plt
 from torch.utils.data import Dataset, DataLoader
 
 
 def MaxAbsAxis(array,axis=None):
     return np.fabs(array,axis)
-
 
 class ImgPredDataset(Dataset):
     def __init__(self, robot_dict, robot_name, cam=0):
@@ -50,80 +51,35 @@ def weights_init(model):
     if classname.find('Conv') != -1:
         nn.init.normal_(model.weight.data, 0.0, 0.02)
     elif classname.find('BatchNorm') != -1:
-        nn.init.normal_(model.weight.data, 1.0, 0.02)
+        nn.init.normal_(model.weight.data, 0.0, 0.02)
         nn.init.constant_(model.bias.data, 0)
 
-class Generator_s(nn.Module):
-    def __init__(self, nz, ngf, nc):
-        super(Generator_s, self).__init__()
-        # add more ConTranspose2d layers.
-        self.main = nn.Sequential(
-            # input is Z, going into a convolution. Latent vector Z is of size(batch_size, 5, 1, 1)
-            nn.ConvTranspose2d(nz, ngf * 8, kernel_size=(3, 4), stride=1, padding=0, bias=True),
-            nn.BatchNorm2d(ngf * 8),
-            nn.LeakyReLU(True),
-            # state size. (ngf*8) x 4 x 3 (batch_size, 512, 4, 3)
-            nn.ConvTranspose2d(ngf * 8, ngf * 4, kernel_size=6, stride=4, padding=1, bias=True),
-            nn.BatchNorm2d(ngf * 4),
-            nn.LeakyReLU(True),
-            # state size. (ngf*4) x 16 x 12
-            nn.ConvTranspose2d(ngf * 4, ngf * 2, kernel_size=7, stride=5, padding=1, bias=True),
-            nn.BatchNorm2d(ngf * 2),
-            nn.LeakyReLU(True),
-            # state size. (ngf*2) x 80 x 60
-            nn.ConvTranspose2d(ngf * 2, nc, kernel_size=6, stride=4, padding=1, bias=True),
-            # state size. (nc) x 320 x 240
-            nn.Tanh()
-        )
-    
-    def forward(self, input):
-        output = self.main(input)
-        return output
+def draw_scatter(horizontal_axis, ave, variance, std_deviation, path):
+    plt.scatter(horizontal_axis, np.array(ave), label='average', color=(0.8,0.,0.))
+    plt.scatter(horizontal_axis, np.array(std_deviation), label='std_deviation', color=(0.,0.5,0.))
+    plt.xlabel('size of dataloader')
+    plt.ylabel('training loss')
+    plt.legend(loc='best')
+    plt.savefig(path+'_ave.png')
+    plt.close()
+    plt.scatter(horizontal_axis, np.array(variance), label='variance', color=(0.8,0.,0.))
+    plt.xlabel('size of dataloader')
+    plt.ylabel('variance of training loss')
+    plt.legend(loc='best')
+    plt.savefig(path+'_var.png')
+    plt.close()
 
-class Generator(nn.Module):
-    def __init__(self, nz, ngf, nc):
-        super(Generator, self).__init__()
-        # add more ConTranspose2d layers.
-        self.main = nn.Sequential(
-            # input is Z, going into a convolution. Latent vector Z is of size(batch_size, 5, 1, 1)
-            nn.ConvTranspose2d(nz, ngf * 64, kernel_size=(3, 4), stride=1, padding=0, bias=True),
-            nn.BatchNorm2d(ngf * 64),
-            nn.LeakyReLU(True),
-            # state size. (ngf*8) x 3 x 4 (batch_size, 512, 3, 4)
-            nn.ConvTranspose2d(ngf * 64, ngf * 32, kernel_size=(3, 4), stride=1, padding=0, bias=True),
-            nn.BatchNorm2d(ngf * 32),
-            nn.LeakyReLU(True),
-            # state size. (ngf*4) x 16 x 12 (batch_size, 256, 5, 7)
-            nn.ConvTranspose2d(ngf * 32, ngf * 16, kernel_size=4, stride=2, padding=0, bias=True),
-            nn.BatchNorm2d(ngf * 16),
-            nn.LeakyReLU(True),
-            # state size. (ngf*2) x 80 x 60 (batch_size, 128, 12, 16)
-            nn.ConvTranspose2d(ngf * 16, ngf * 8, kernel_size=(3, 4), stride=1, padding=0, bias=True),
-            nn.BatchNorm2d(ngf * 8),
-            nn.LeakyReLU(True),
-            # state size. (ngf) x 80 x 60 (batch_size, 64, 14, 19)
-            nn.ConvTranspose2d(ngf * 8, ngf * 4, kernel_size=(3, 3), stride=2, padding=0, bias=True),
-            nn.BatchNorm2d(ngf * 4),
-            nn.LeakyReLU(True),
-            # state size. (ngf/2) x 80 x 60 (batch_size, 32, 29, 39)
-            nn.ConvTranspose2d(ngf * 4, ngf * 2, kernel_size=(3, 3), stride=2, padding=0, bias=True),
-            nn.BatchNorm2d(ngf * 2),
-            nn.LeakyReLU(True),
-            # state size. (ngf/4) x 80 x 60 (batch_size, 16, 59, 79)
-            nn.ConvTranspose2d(ngf * 2, ngf, kernel_size=(3, 3), stride=2, padding=0, bias=True),
-            nn.BatchNorm2d(ngf),
-            nn.LeakyReLU(True),
-            # state size. (ngf/8) x 80 x 60 (batch_size, 8, 119, 159)
-            nn.ConvTranspose2d(ngf, nc, kernel_size=(4, 4), stride=2, padding=0, bias=True),
-            nn.BatchNorm2d(nc),
-            nn.LeakyReLU(True),
-            # state size. (nc) x 240 x 320
-            nn.Tanh()
-        )
-
-    def forward(self, input):
-        output = self.main(input)
-        return output
+def save_weight_of_layers(network, name):
+    weight_of_layer = {}
+    for i in range(len(network.main)):
+        if isinstance(network.main[i],torch.nn.modules.conv.ConvTranspose2d):
+            weight_of_layer[network.main[i]._get_name()+'_{}'.format(i)] = torch.sum(torch.square(network.main[i].weight)).item() + torch.sum(torch.square(network.main[i].bias)).item()
+        elif isinstance(network.main[i],torch.nn.modules.batchnorm.BatchNorm2d):
+            weight_of_layer[network.main[i]._get_name()+'_{}'.format(i)] = torch.sum(torch.square(network.main[i].weight)).item() + torch.sum(torch.square(network.main[i].bias)).item()
+        else: # LeakyRelu
+            weight_of_layer[network.main[i]._get_name()+'_{}'.format(i)] = 0.01*0.01
+    with open(name+'.pkl', 'wb') as fp:
+        pickle.dump(weight_of_layer, fp)
 
 class My_loss(nn.Module):
     def __init__(self, img_shape):
@@ -133,5 +89,7 @@ class My_loss(nn.Module):
     def forward(self, fake, real):
         assert fake.shape == self.img_shape, 'fakes shape may be wrong'
         assert real.shape == fake.shape, 'fake images and real images got different shape'
-        loss = torch.sum((real-fake)**2)/torch.prod(torch.tensor(fake.shape))
-        return loss
+        square_sum = torch.sum((real-fake)**2)
+        loss = square_sum/torch.prod(torch.tensor(fake.shape))
+        loss_sqrt = torch.sqrt(square_sum)/torch.prod(torch.tensor(fake.shape))
+        return loss, loss_sqrt
